@@ -20,12 +20,16 @@ void mostrarSolucion(int mat[M][N]) {
         if (mat[i][j] == 0) {
           cout << "0" << " ";
         } else {
-          cout << mat[i][j] << " ";
+          if (mat[i][j] != 0 && mat[i][j] != INT_MAX) {
+            cout << "1" << " ";
+          } else {
+            cout << mat[i][j] << " ";
+          }
         }
       }
     }
     cout << "\n";
-  } 
+  }
 }
 
 int esSolucion(struct posicion *solucion, int paso, int mat[M][N]) {
@@ -34,8 +38,8 @@ int esSolucion(struct posicion *solucion, int paso, int mat[M][N]) {
 
 int generarCandidatos(struct posicion *solucion, struct posicion candidatos[], int mat[M][N], int paso) {
   int NC = 0;
-  int X = solucion[paso].x;
-  int Y = solucion[paso].y;
+  int X = solucion[paso - 1].x;
+  int Y = solucion[paso - 1].y;
 
   //arriba
   if(mat[X - 1][Y] == 0 && (X > 0)) {
@@ -66,8 +70,10 @@ int generarCandidatos(struct posicion *solucion, struct posicion candidatos[], i
 
 void backtracking(struct posicion *solucion, int paso, int mat[M][N]) {
   if (esSolucion(solucion, paso, mat)) {
+    cout << "\nBacktracking:\n";
     mostrarSolucion(mat);
   }else{
+    paso = paso + 1;
     int NC, i;
     struct posicion candidatos[4];
     NC = generarCandidatos(solucion, candidatos, mat, paso);
@@ -86,7 +92,7 @@ void backtracking(struct posicion *solucion, int paso, int mat[M][N]) {
 
 int main (int argc, char *argv[]) {
 
-  struct posicion solucion[M*N]; 
+  struct posicion solucion[M*N];
 
   int mat[M][N];
   for (int i = 0; i < M; i++) {
@@ -105,12 +111,11 @@ int main (int argc, char *argv[]) {
       }
     }
   }
-   
+
   solucion[0].x = 0;
   solucion[0].y = 0;
   mat[0][0] = 1;
 
-  mostrarSolucion(mat);
   backtracking(solucion, 0, mat);
 
   return 0;
