@@ -1,11 +1,38 @@
+/*
+ Actividad 1.3 Técnicas de Ramificación y Poda
+ Análisis y diseño de algoritmos avanzados
+
+ A01771963 -  Dael Chávez Ferreyra
+ A01369019 -  Andrea Bahena Valdés
+
+ Este programa encuentra la solución a un laberinto
+ a través de dos enfoques.
+
+    a) Backtracking: Algoritmo de búsqueda en profundidad
+    b) Ramificación: Algoritmo de búsqueda en amplitud
+                     y búsqueda por costo (caminos mínimos)
+
+
+ Adicionalmente, se incluyó un análisis numérico de la eficiencia
+ de cada enfoque.
+
+ Fecha de la última modificación: 25 de agosto del 2024
+
+*/
+
 #include <bits/stdc++.h>
+#include <chrono>
 #include <cstring>
 #include <iostream>
 
 using namespace std;
+using namespace std::chrono;
 
-int M;
-int N;
+int M;      // Columnas del laberinto
+int N;      // Filas del laberinto
+
+
+// Posición en el laberinto
 
 struct posicion {
     int x;
@@ -14,6 +41,12 @@ struct posicion {
 
 int *mejorSolucion = nullptr;
 
+
+/*
+ Función: despliega en la pantalla la matriz de solución
+ Parámetros: mat - matriz con la solución
+ Valor de retorno: -
+*/
 void mostrarSolucion(int *mat) {
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
@@ -29,10 +62,23 @@ void mostrarSolucion(int *mat) {
     }
 }
 
+/*
+ Función: verifica si la posición actual es la posición de salida
+ Parámetros: solucion = arreglo del camino actual, paso, mat = laberinto
+ Valor de retorno: booleano de si ya está en la salida
+*/
+
 int esSolucion(struct posicion *solucion, int paso, int *mat) {
     return (solucion[paso].x == M - 1 && solucion[paso].y == N - 1);
 }
 
+/*
+
+ Función: almacena las posiciones candidatas
+ Parámetros: solucion, candidatos: posiciones candidatas, mat, paso
+ Valor de retorno: total de candidatos
+
+*/
 int generarCandidatos(struct posicion *solucion, struct posicion candidatos[], int *mat, int paso) {
     int NC = 0;
     int X = solucion[paso - 1].x;
@@ -65,42 +111,65 @@ int generarCandidatos(struct posicion *solucion, struct posicion candidatos[], i
     return NC;
 }
 
+/*
+
+ Función: búsqueda en profundidad para encontrar todas las soluciones
+ Parámetros: solucion, paso, mat
+ Valor de retorno: -
+ Complejidad Algorítmica: O(b^d) b= promedio de hijos, d= profundidad
+
+
+*/
 void backtracking(struct posicion *solucion, int paso, int *mat) {
-  if (esSolucion(solucion, paso, mat)) {
-    cout << "\nBacktracking:\n";
-    mostrarSolucion(mat);
-  }else{
-    paso = paso + 1;
-    int NC, i;
-    struct posicion candidatos[4];
-    NC = generarCandidatos(solucion, candidatos, mat, paso);
-    for (i = 0; i < NC; i++) {
-      solucion[paso] = candidatos[i];
-      //Bloquear
-      mat[solucion[paso].x * N + solucion[paso].y] = 1 + paso;
+    if (esSolucion(solucion, paso, mat)) {
+        cout << "\nBacktracking:\n";
+        mostrarSolucion(mat);
+    } else {
+        paso = paso + 1;
+        int NC, i;
+        struct posicion candidatos[4];
+        NC = generarCandidatos(solucion, candidatos, mat, paso);
+        for (i = 0; i < NC; i++) {
+            solucion[paso] = candidatos[i];
+            // Bloquear
+            mat[solucion[paso].x * N + solucion[paso].y] = 1 + paso;
 
-      backtracking(solucion, paso, mat);
-      //Desbloquear
+            backtracking(solucion, paso, mat);
+            // Desbloquear
 
-      mat[solucion[paso].x * N + solucion[paso].y] = 0;
+            mat[solucion[paso].x * N + solucion[paso].y] = 0;
+        }
     }
-  }
 }
+
+/*
+
+ Función: Optimización de búsqueda de profundidad
+ Parámetros: solucion, paso, mat, mejorPaso= longitud del mejor camino
+ Valor de retorno: -
+ Complejidad Algorítmica: O(b^d) b= promedio de hijos, d= profundidad
+
+ El beneficio sobre la poda es que no tiene que buscar a todos los hijos
+
+
+*/
 
 void poda(struct posicion *solucion, int paso, int *mat, int &mejorPaso) {
     if (esSolucion(solucion, paso, mat)) {
         if (paso < mejorPaso) {
-          mejorPaso = paso;
+            mejorPaso = paso;
 
-          if (mejorSolucion == nullptr) {
-            mejorSolucion = new int[M * N];
-          }
-          memcpy(mejorSolucion, mat, M * N * sizeof(int));
+            if (mejorSolucion == nullptr) {
+                mejorSolucion = new int[M * N];
+            }
+
+// Se hace una copia en memoria para prevenir violaciones de segmentos 'core'
+            memcpy(mejorSolucion, mat, M * N * sizeof(int));
         }
         return;
     }
     if (paso >= mejorPaso) {
-      return;
+        return;
     } else {
         paso = paso + 1;
         int NC, i;
@@ -148,15 +217,36 @@ int main(int argc, char *argv[]) {
 
     int mejorPaso = INT_MAX;
 
+    /* Medir tiempo de ejecución para Backtracking y de la ramificación y poda
+       Esto funciona mediante la librería Chrono
+    */
+    auto start = high_resolution_clock::now();
     backtracking(solucion, 0, mat);
+    auto stop = high_resolution_clock::now();
+    auto durationBacktracking = duration_cast<microseconds>(stop - start);
+
+    start = high_resolution_clock::now();
     poda(solucion, 0, mat, mejorPaso);
+    stop = high_resolution_clock::now();
+    auto durationPoda = duration_cast<microseconds>(stop - start);
 
     if (mejorSolucion != nullptr) {
-      cout << "\nRamificación y poda:\n";
-      mostrarSolucion(mejorSolucion);
-      delete [] mejorSolucion;
-    }else {
-      cout << "\nNo tiene mejor solución\n";
+        cout << "\nRamificación y poda:\n";
+        mostrarSolucion(mejorSolucion);
+        delete[] mejorSolucion;
+    } else {
+        cout << "\nNo tiene mejor solución\n";
+    }
+
+    cout << "\nTiempo de Backtracking: " << durationBacktracking.count() << " microsegundos.\n";
+    cout << "Tiempo de Ramificación y Poda: " << durationPoda.count() << " microsegundos.\n";
+
+    if (durationPoda.count() < durationBacktracking.count()) {
+        double porcentaje = (double)(durationBacktracking.count() - durationPoda.count()) / durationBacktracking.count() * 100;
+        cout << "Ramificación y Poda es más rápido por un " << porcentaje << "%.\n";
+    } else {
+        double porcentaje = (double)(durationPoda.count() - durationBacktracking.count()) / durationPoda.count() * 100;
+        cout << "Backtracking es más rápido por un " << porcentaje << "%.\n";
     }
 
     return 0;
